@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 def get_list_working_proxies():
 
     # URL of the website to scrape
-    url = 'https://www.proxy-list.download/api/v1/get?type=http'
+    url = 'https://www.proxy-list.download/api/v1/get?type=https'
 
     # Retrieve the webpage content
     response = requests.get(url)
@@ -19,7 +19,7 @@ def get_list_working_proxies():
     working_proxies = []
     for proxy in proxies:
         try:
-            response = requests.get('https://free-proxy-list.net', proxies={'http': proxy}, timeout=50)
+            response = requests.get('https://free-proxy-list.net', proxies={'https': proxy}, timeout=50)
             if response.status_code == 200:
                 working_proxies.append(proxy)
         except:
