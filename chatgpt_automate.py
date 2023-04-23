@@ -2,23 +2,42 @@ import itertools
 import os
 import subprocess
 import os
+import random
+from random import sample
+
+
+#define Terrier
+terrier_exec = '/home/masteripper/terrier-project-5.5/bin/terrier'
+terrier_etc = '/home/masteripper/terrier-project-5.5/etc'
+terrier_batch = '/home/masteripper/terrier-project-5.5/batch'
+
 # Define the possible values for each property
-wmodels = ['BM25', 'DFR', 'DLH', 'DFRee','DPH']
+wmodels = random.choice(['BM25', 'DFR', 'DLH', 'DFRee','DPH'])
 trecquerytags_processes = ['TOP','NUM','TITLE']
 trecquerytags_skips = ['DESC','NARR']
 termpipelines = ['Stopwords', 'PorterStemmer', 'Stopwords,PorterStemmer']
 fieldtags_processes = ['TITLE', 'ELSE']
-tokenizers = ['EnglishTokeniser', 'GalicianTokeniser']
+
 
 # Read the Terrier properties file
-with open('terrier.properties') as f:
+terrier_properties = os.path.join(terrier_etc,'terrier.properties')
+with open(terrier_properties) as f:
     lines = f.readlines()
 
 # Generate all possible combinations of the properties
-combinations = list(itertools.product(wmodels, trecquerytags_processes, trecquerytags_skips, termpipelines, fieldtags_processes, tokenizers))
+for i in range(20):
+    trecquerytags_processes_rnd = random.randint(1, len(trecquerytags_processes))
+    trecquerytags_skips_rnd = random.randint(1, len(trecquerytags_skips))
+    termpipelines_rnd = random.randint(1, len(termpipelines))
+    fieldtags_processes_rnd = random.randint(1, len(fieldtags_processes))
+    combinations = [wmodels,
+                    sample(trecquerytags_processes,trecquerytags_processes_rnd),
+                    sample(trecquerytags_skips,trecquerytags_skips_rnd),
+                    sample(termpipelines,termpipelines_rnd),
+                    sample(fieldtags_processes,fieldtags_processes_rnd)]
 
 # Generate a new properties file, execute indexing and retrieval for each combination
-for i, combination in enumerate(combinations):
+
     new_lines = []
     for line in lines:
         if line.startswith('querying.default.controls='):
@@ -27,7 +46,7 @@ for i, combination in enumerate(combinations):
             if len(result)>0 :
                 result_splitted = result[0].split('=')
                 result_resplitted =result_splitted[1].split(':')
-                result_resplitted[1] = combination[0]
+                result_resplitted[1] = combinations[0]
                 w_model  =':'.join(result_resplitted)
                 result_splitted[1] = w_model
                 quering_default = '='.join(result_splitted)
@@ -39,43 +58,33 @@ for i, combination in enumerate(combinations):
 
 
         elif line.startswith('TrecQueryTags.process='):
-            new_lines.append('TrecQueryTags.process={}\n'.format(combination[1]))
+            processed = ','.join(combinations[1])
+            new_lines.append(f'TrecQueryTags.process={processed}\n')
         elif line.startswith('TrecQueryTags.skip='):
-            new_lines.append('TrecQueryTags.skip={}\n'.format(combination[2]))
+            skipped = ','.join(combinations[2])
+            new_lines.append(f'TrecQueryTags.skip={skipped}\n')
         elif line.startswith('termpipelines='):
-            new_lines.append('termpipelines={}\n'.format(combination[3]))
+            term_lines = ','.join(combinations[3])
+            new_lines.append(f'termpipelines={term_lines}\n')
         elif line.startswith('FieldTags.process='):
-            new_lines.append('FieldTags.process={}\n'.format(combination[4]))
-        elif line.startswith('querying.tokeniser='):
-            pass
-       #     new_lines.append('querying.tokeniser={}\n'.format(combination[5]))
-        elif line.startswith('indexer.meta.forward.keys='):
-            pass
-         #   new_lines.append('indexer.meta.forward.keys=docno\n')
-        elif line.startswith('indexer.meta.forward.keylens='):
-            pass
-        #    new_lines.append('indexer.meta.forward.keylens=12\n')
-        elif line.startswith('indexer.meta.forward.keylens.names='):
-            pass
-        #    new_lines.append('indexer.meta.forward.keylens.names=docno\n')
-        elif line.startswith('indexer.meta.reverse.keylens='):
-            pass
-        #    new_lines.append('indexer.meta.reverse.keylens=12\n')
-        elif line.startswith('indexer.meta.reverse.keylens.names='):
-            pass
-         #   new_lines.append('indexer.meta.reverse.keylens.names=docno\n')
+            tag_process=  ','.join(combinations[4])
+            new_lines.append(f'FieldTags.process={tag_process}\n')
+
         else:
             new_lines.append(line)
-    index_folder = f'./index_{i}'
-    new_lines.append(f'terrier.index.path={index_folder }/')
-    with open('terrier_{}.properties'.format(i), 'w') as f:
+    #index_folder = f'./index_{i}'
+    #new_lines.append(f'terrier.index.path={index_folder }/')
+    old_name = terrier_properties
+    new_name = terrier_properties + f"_0{i}"
+    os.rename(old_name, new_name)
+    with open(terrier_properties, 'w') as f:
         f.writelines(new_lines)
-
-    if not os.path.exists(f"{index_folder }"):
+    index_folder = os.path.join(terrier_batch,f"index_{i}")
+    if not os.path.exists(index_folder):
         # if the demo_folder directory is not present
         # then create it.
-        os.makedirs(f"{index_folder}")
-    #subprocess.run(['terrier', 'indexing', '-Dterrier.index.path=index_{}'.format(i), '-p', 'terrier_{}.properties'.format(i)])
+        os.makedirs(index_folder)
+    subprocess.run('./terrier batchindexing')
     #subprocess.run(['terrier', 'batchretrieve', '-Dterrier.index.path=index_{}'.format(i), '-Dtrec.results.file=results_{}.txt'.format(i), '-p', 'terrier_{}.properties'.format(i)])
     #subprocess.run(['trec_eval', '-q', '-c', '-M1000', '-m', 'map', 'qrels.txt', 'results_{}.txt'.format(i)], stdout=open('eval_{}.txt'.format(i), 'w'))
 
