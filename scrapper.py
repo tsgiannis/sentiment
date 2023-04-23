@@ -131,22 +131,6 @@ def scrape_artist(
 ):
     home = "https://www.azlyrics.com/"
     current_proxy = get_valid_proxy(candidate_proxies)
-    # try:
-    #     urlopen(
-    #         "http://example.com",
-    #         proxies={'http': 'http://example.com:8080'}
-    #     )
-    # except IOError:
-    #     print
-    #     "Connection error! (Check proxy)"
-    # else:
-    #     print
-    #     "All was fine"
-
-
-
-
-    #set_http_proxy(current_proxy)
 
     url = az_url
     request = urllib.request.Request(url)
