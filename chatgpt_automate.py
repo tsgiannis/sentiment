@@ -4,7 +4,7 @@ import subprocess
 import os
 import random
 from random import sample
-
+import shutil
 
 #define Terrier
 terrier_exec = '/home/masteripper/terrier-project-5.5/bin/terrier'
@@ -69,22 +69,28 @@ for i in range(20):
         elif line.startswith('FieldTags.process='):
             tag_process=  ','.join(combinations[4])
             new_lines.append(f'FieldTags.process={tag_process}\n')
+        elif line.startswith('terrier.index.path'):
+            new_lines.append('# placeholder\n')
 
         else:
             new_lines.append(line)
-    #index_folder = f'./index_{i}'
-    #new_lines.append(f'terrier.index.path={index_folder }/')
+    index_folder = os.path.join(terrier_batch,f"index_{i}")
+    #
     old_name = terrier_properties
     new_name = terrier_properties + f"_0{i}"
     os.rename(old_name, new_name)
+    new_lines.append(f'terrier.index.path={index_folder}/')
     with open(terrier_properties, 'w') as f:
         f.writelines(new_lines)
-    index_folder = os.path.join(terrier_batch,f"index_{i}")
+
     if not os.path.exists(index_folder):
         # if the demo_folder directory is not present
         # then create it.
         os.makedirs(index_folder)
-    subprocess.run('./terrier batchindexing')
+    subprocess.run([f'{terrier_exec}', 'batchindexing'])
+    # Copy terrier.properties
+    terrier_properties_new_path = os.path.join(index_folder,"terrier.properties")
+    shutil.copy(terrier_properties, terrier_properties_new_path)
     #subprocess.run(['terrier', 'batchretrieve', '-Dterrier.index.path=index_{}'.format(i), '-Dtrec.results.file=results_{}.txt'.format(i), '-p', 'terrier_{}.properties'.format(i)])
     #subprocess.run(['trec_eval', '-q', '-c', '-M1000', '-m', 'map', 'qrels.txt', 'results_{}.txt'.format(i)], stdout=open('eval_{}.txt'.format(i), 'w'))
 
