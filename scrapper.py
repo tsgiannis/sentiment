@@ -95,10 +95,10 @@ def get_lyrics(
 
 ):
     while True :
-        time.sleep(5)
+        time.sleep(15)
         proxy = random.choice(candidate_proxies)
         try:
-            response = requests.get(song_url, proxies={'https': proxy}, timeout=50)
+            response = requests.get(song_url, proxies={'https': proxy}, timeout=200)
             if response.status_code == 200:
                 break
         except:
@@ -173,7 +173,7 @@ def scrape_artist(
             t = 10
         else:
             rt = t = sleep
-        print("Songs downloaded:", i, "/", n, " -  ETA:", round(t * (n - i) / 60, 2), "minutes")
+        print("Songs downloaded:", i, "/", n, " -  ETA:", round(t * (n - i) / 60, 2), "minutes"," lyric : " ,url)
         i += 1
         time.sleep(rt)  # This is to avoid being recognized as a bot
 
@@ -235,7 +235,8 @@ def scrape_all(
 
 #candidate_proxies = proxies.get_list_working_proxies()
 #https://spys.one/en/free-proxy-list/
-candidate_proxies = ['217.160.12.13:3128','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','148.251.83.62:3128']
+candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
+candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
 enya = "https://www.azlyrics.com/s/springsteen.html"
 scrape_artist(enya, folder="C:\Artists\Enya")
 
