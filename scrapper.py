@@ -12,14 +12,44 @@ import random
 import urllib
 #import proxies
 import requests
+import html5lib
+#import dryscrape
 
 
+# def get_proxies(number, port, p, country):
+#     r = requests.post('http://spys.one/en/https-ssl-proxy/',  data = {'xpp': 5, 'xf4': number})
+#     soup = BeautifulSoup(r.content, 'lxml')
+#     proxies = [':'.join([p.findall(i.text)[0], port]) for i in soup.select('table table tr:has(.spy14:contains("' + country + '")) td:has(script) .spy14')]
+#     return proxies
+#
+# ports = ['3128', '8080', '80']
+# p = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})document')
+# proxies = []
+#
+# for number, port in enumerate(ports,1):
+#     proxies+=get_proxies(number, port, p, 'United States')
+#
+# print(proxies)
 
 def get_http_proxy_list():
     proxy_url  ="https://spys.one/en/free-proxy-list/"
     req = urllib.request.Request(proxy_url, headers={'User-Agent': "Magic Browser"})
     con = urllib.request.urlopen(req)
     soup = BeautifulSoup(con.read(), "html.parser")
+    tables = soup.findAll("table")
+    #s = dryscrape.Session()
+    #s.visit(proxy_url)
+    #df = pd.read_html(s.body())[5]
+    #df.head()
+    for table in tables:
+        #if table.findParent("table") is None:
+        rowsLen =  len(table.findAll(lambda tag: tag.name == 'tr' and tag.findParent('table') == table))
+        print(rowsLen)
+        if rowsLen>30:
+            print(table)
+            df =  pd.read_html(str(table),header =0)[0]
+            df[['A', 'B']] = df['Free proxy list. Open proxy servers. Shared proxies list.'].str.split('document.',  expand=True)
+            print(df)
 
 
 
