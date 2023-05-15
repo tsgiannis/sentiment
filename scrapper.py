@@ -13,6 +13,16 @@ import urllib
 #import proxies
 import requests
 
+
+
+def get_http_proxy_list():
+    proxy_url  ="https://spys.one/en/free-proxy-list/"
+    req = urllib.request.Request(proxy_url, headers={'User-Agent': "Magic Browser"})
+    con = urllib.request.urlopen(req)
+    soup = BeautifulSoup(con.read(), "html.parser")
+
+
+
 def set_http_proxy(proxy):
     if proxy == None:  # Use system default setting
         proxy_support = urllib.request.ProxyHandler()
@@ -235,8 +245,9 @@ def scrape_all(
 
 #candidate_proxies = proxies.get_list_working_proxies()
 #https://spys.one/en/free-proxy-list/
-candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
-candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
+#candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
+#candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
+candidate_proxies = get_http_proxy_list()
 enya = "https://www.azlyrics.com/s/springsteen.html"
 scrape_artist(enya, folder="C:\Artists\Enya")
 
