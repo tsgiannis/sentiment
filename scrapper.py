@@ -188,7 +188,7 @@ def scrape_artist(
         proxy = random.choice(candidate_proxies)
         try:
             print(f"trying proxy : {proxy}")
-            response = requests.get(az_url, proxies={'http': proxy}, timeout=50)
+            response = requests.get(az_url, proxies={'https': proxy}, timeout=20)
             if response.status_code == 200:
                 url = az_url
                 request = urllib.request.Request(url)
@@ -201,7 +201,7 @@ def scrape_artist(
                     urls.append(home + d.a['href'].split("/", 1)[1])
                 n = len(urls)
                 i = 1
-                current_downloaded_files = os.listdir(folder)
+                current_downloaded_files = os.listdir(os.path.join(folder,"all"))
                 empty_files = {f for f in current_downloaded_files if os.stat(f).st_size == 0}
                 downloaded_files = set(current_downloaded_files) - empty_files
                 for url in urls:
