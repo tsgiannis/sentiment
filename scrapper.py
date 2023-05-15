@@ -202,9 +202,11 @@ def scrape_artist(
                 n = len(urls)
                 i = 1
                 current_downloaded_files = os.listdir(os.path.join(folder,"all"))
-                empty_files = {f for f in current_downloaded_files if os.stat(f).st_size == 0}
+                empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder,"all",f)).st_size == 0}
                 downloaded_files = set(current_downloaded_files) - empty_files
-                for url in urls:
+                downloaded_files =[s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
+                urls_to_download = [url for url in urls if not any(word in url for word in [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)])]
+                for url in urls_to_download:
                     get_lyrics(url,proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
                     if sleep == "random":
                         rt = random.randint(5, 15)
