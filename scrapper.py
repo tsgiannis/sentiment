@@ -12,8 +12,8 @@ import random
 import urllib
 #import proxies
 import requests
-import html5lib
-#import dryscrape
+import proxy_list_scrapper as pps
+from varname import nameof
 
 
 # def get_proxies(number, port, p, country):
@@ -127,25 +127,24 @@ def save_file(
 
 def get_lyrics(
         song_url,
+        current_proxy,
         save=True,
         by_decade=False,
         replace=False,
         folder="songs"
-        #proxy = "174.138.184.82:37737"
-
 ):
     while True :
         time.sleep(15)
-        proxy = random.choice(candidate_proxies)
+
         try:
-            response = requests.get(song_url, proxies={'https': proxy}, timeout=200)
+            response = requests.get(song_url, proxies={'http': current_proxy}, timeout=200)
             if response.status_code == 200:
                 break
         except:
             pass
     #song = urlopen(song_url)
     request = urllib.request.Request(song_url)
-    request.set_proxy(proxy, 'https')
+    request.set_proxy(current_proxy, 'https')
     song = urllib.request.urlopen(request)
     soup = BeautifulSoup(song.read(), "html.parser")
     lyrics =soup.find_all(attrs={'class': None})[34].text
@@ -188,34 +187,39 @@ def scrape_artist(
     while True :
         proxy = random.choice(candidate_proxies)
         try:
-            response = requests.get(az_url, proxies={'https': proxy}, timeout=50)
+            print(f"trying proxy : {proxy}")
+            response = requests.get(az_url, proxies={'http': proxy}, timeout=50)
             if response.status_code == 200:
-                break
-        except:
-            pass
+                url = az_url
+                request = urllib.request.Request(url)
+                request.set_proxy(proxy, 'https')
+                main_page = urllib.request.urlopen(request)
+                bs = BeautifulSoup(main_page.read(), "html.parser")
+                divs = bs.find_all('div', {"class": "listalbum-item"})
+                urls = list()
+                for d in divs:
+                    urls.append(home + d.a['href'].split("/", 1)[1])
+                n = len(urls)
+                i = 1
+                current_downloaded_files = os.listdir(folder)
+                empty_files = {f for f in current_downloaded_files if os.stat(f).st_size == 0}
+                downloaded_files = set(current_downloaded_files) - empty_files
+                for url in urls:
+                    get_lyrics(url,proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
+                    if sleep == "random":
+                        rt = random.randint(5, 15)
+                        t = 10
+                    else:
+                        rt = t = sleep
+                    print("Songs downloaded:", i, "/", n, " -  ETA:", round(t * (n - i) / 60, 2), "minutes",
+                          " lyric : ", url)
+                    i += 1
+                    time.sleep(rt)  # This is to avoid being recognized as a bot
 
-    url = az_url
-    request = urllib.request.Request(url)
-    request.set_proxy(proxy,'https')
-    main_page =urllib.request.urlopen(request)
-    bs = BeautifulSoup(main_page.read(), "html.parser")
-    divs = bs.find_all('div', {"class": "listalbum-item"})
-    urls = list()
-    for d in divs:
-        urls.append(home + d.a['href'].split("/", 1)[1])
-    n = len(urls)
-    i = 1
-    for url in urls:
-        current_proxy = random.choice(candidate_proxies)
-        get_lyrics(url, save=True, by_decade=by_decade, replace=replace, folder=folder)
-        if sleep == "random":
-            rt = random.randint(5, 15)
-            t = 10
-        else:
-            rt = t = sleep
-        print("Songs downloaded:", i, "/", n, " -  ETA:", round(t * (n - i) / 60, 2), "minutes"," lyric : " ,url)
-        i += 1
-        time.sleep(rt)  # This is to avoid being recognized as a bot
+
+        except:
+            print(f"fail on using proxy {proxy}")
+            pass
 
 
 def get_artists(
@@ -277,9 +281,9 @@ def scrape_all(
 #https://spys.one/en/free-proxy-list/
 #candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
 #candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
-candidate_proxies = get_http_proxy_list()
-enya = "https://www.azlyrics.com/s/springsteen.html"
-scrape_artist(enya, folder="C:\Artists\Enya")
+candidate_proxies = pps.get_list_of_proxies()
+mc_hammer = "https://www.azlyrics.com/m/mchammer.html"
+scrape_artist(mc_hammer, folder=f"C:\Artists\mc_hammer")
 
 only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
 get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
