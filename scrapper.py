@@ -153,12 +153,13 @@ def get_lyrics(
         title = soup.find_all("b")[1].get_text().replace('"', '')
         file_title = title.replace(" ", "_")
         album = soup.find_all(class_="songinalbum_title")
-        if len(album) == 1:
+        if len(album) >= 1:
             album_text = album[0].get_text()
             if (album_text[album_text.find("(") + 1:album_text.find(")")]).isnumeric():
                 year = int(album_text[album_text.find("(") + 1:album_text.find(")")])
                 decade = str(year)[:3] + "0s"
         else:
+
             year = None
             decade = "others"
         if not save:
