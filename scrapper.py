@@ -149,7 +149,7 @@ def get_lyrics(
     lyrics = lyrics.lstrip()
     if len(lyrics) > 100:
         # soup.find_all("div")[20].get_text()
-        title = soup.find_all("b")[1].get_text().replace('"', '')
+        title = soup.find_all("b")[1].get_text().replace('"', '').replace("/","_").replace("\\","")
         file_title = title.replace(" ", "_")
         album = soup.find_all(class_="songinalbum_title")
         if len(album) >= 1:
@@ -212,7 +212,8 @@ def scrape_artist(
         proxy = random.choice(candidate_proxies)
         try:
             print(f"trying proxy : {proxy}", end=" ")
-            response = requests.get(az_url, proxies={'https': proxy}, timeout=20)
+            response = requests.get(az_url, proxies={'https': proxy}, timeout=32)
+            time.sleep(15)
             if response.status_code == 200:
                 print("\n Initialization of song lyrics download")
                 url = az_url
@@ -361,8 +362,8 @@ conn = psycopg2.connect(database="aclepmym", user="aclepmym", password="K588WhHB
 print("Opened database successfully")
 
 candidate_proxies = pps.get_list_of_proxies()
-haddaway = "https://www.azlyrics.com/h/haddaway.html"
-scrape_artist(haddaway, folder=f"C:\Artists\\haddaway",artist_name="haddaway")
+artist_to_scrape = "https://www.azlyrics.com/d/doors.html"
+scrape_artist(artist_to_scrape, folder=f"C:\Artists\\doors",artist_name="doors")
 conn.close()
 # only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
 # get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
