@@ -10,7 +10,7 @@ from urllib.request import urlopen
 import pathlib
 import random
 import urllib
-#import proxies
+# import proxies
 import requests
 import proxy_list_scrapper as pps
 import psycopg2
@@ -32,25 +32,25 @@ import psycopg2
 # print(proxies)
 
 def get_http_proxy_list():
-    proxy_url  ="https://spys.one/en/free-proxy-list/"
+    proxy_url = "https://spys.one/en/free-proxy-list/"
     req = urllib.request.Request(proxy_url, headers={'User-Agent': "Magic Browser"})
     con = urllib.request.urlopen(req)
     soup = BeautifulSoup(con.read(), "html.parser")
     tables = soup.findAll("table")
-    #s = dryscrape.Session()
-    #s.visit(proxy_url)
-    #df = pd.read_html(s.body())[5]
-    #df.head()
+    # s = dryscrape.Session()
+    # s.visit(proxy_url)
+    # df = pd.read_html(s.body())[5]
+    # df.head()
     for table in tables:
-        #if table.findParent("table") is None:
-        rowsLen =  len(table.findAll(lambda tag: tag.name == 'tr' and tag.findParent('table') == table))
+        # if table.findParent("table") is None:
+        rowsLen = len(table.findAll(lambda tag: tag.name == 'tr' and tag.findParent('table') == table))
         print(rowsLen)
-        if rowsLen>30:
+        if rowsLen > 30:
             print(table)
-            df =  pd.read_html(str(table),header =0)[0]
-            df[['A', 'B']] = df['Free proxy list. Open proxy servers. Shared proxies list.'].str.split('document.',  expand=True)
+            df = pd.read_html(str(table), header=0)[0]
+            df[['A', 'B']] = df['Free proxy list. Open proxy servers. Shared proxies list.'].str.split('document.',
+                                                                                                       expand=True)
             print(df)
-
 
 
 def set_http_proxy(proxy):
@@ -70,26 +70,23 @@ def is_bad_proxy(pip):
         opener = urllib.request.build_opener(proxy_handler)
         opener.addheaders = [('User-agent', 'Mozilla/5.0')]
         urllib.request.install_opener(opener)
-        sock=urllib.request.urlopen('https://www.google.com')
+        sock = urllib.request.urlopen('https://www.google.com')
     except urllib.error.HTTPError as e:
         print('Error code: ', e.code)
         return e.code
     except Exception as detail:
 
-        print( "ERROR:", detail)
+        print("ERROR:", detail)
         return 1
     return 0
 
 
-
-
-def get_valid_proxy(proxy_list): #format of items e.g. '128.2.198.188:3124'
+def get_valid_proxy(proxy_list):  # format of items e.g. '128.2.198.188:3124'
 
     proxies = random.sample(proxy_list, 2)
     for proxy in proxies:
         if not is_bad_proxy(proxy):
             return proxy
-
 
 
 def save_file(
@@ -111,12 +108,12 @@ def save_file(
             file.close()
         else:
             path = pathlib.PurePath(path)
-            base_path =path.parent
+            base_path = path.parent
             songname = path.stem
 
-            songname=re.sub('[^A-Za-z0-9_]', '', songname)
-            finalpath = os.path.join(base_path,songname)
-            file = open(finalpath + ".txt", "w",encoding='utf-8')
+            songname = re.sub('[^A-Za-z0-9_]', '', songname)
+            finalpath = os.path.join(base_path, songname)
+            file = open(finalpath + ".txt", "w", encoding='utf-8')
             file.write(text)
             file.close()
     else:
@@ -127,13 +124,14 @@ def save_file(
 
 def get_lyrics(
         song_url,
+        artist_name,
         current_proxy,
         save=True,
         by_decade=False,
         replace=False,
         folder="songs"
 ):
-    while True :
+    while True:
         time.sleep(15)
 
         try:
@@ -142,14 +140,15 @@ def get_lyrics(
                 break
         except:
             pass
-    #song = urlopen(song_url)
+    # song = urlopen(song_url)
     request = urllib.request.Request(song_url)
     request.set_proxy(current_proxy, 'https')
     song = urllib.request.urlopen(request)
     soup = BeautifulSoup(song.read(), "html.parser")
-    lyrics =soup.find_all(attrs={'class': None})[34].text
-    if len(lyrics)>100:
-    # soup.find_all("div")[20].get_text()
+    lyrics = soup.find_all(attrs={'class': None})[34].text
+    lyrics = lyrics.lstrip()
+    if len(lyrics) > 100:
+        # soup.find_all("div")[20].get_text()
         title = soup.find_all("b")[1].get_text().replace('"', '')
         file_title = title.replace(" ", "_")
         album = soup.find_all(class_="songinalbum_title")
@@ -167,6 +166,26 @@ def get_lyrics(
         if not save:
             return title, lyrics, year
         else:
+            try:
+                # Create a cursor object
+                cur = conn.cursor()
+                # Define the SQL query and the parameter values
+                query = "INSERT INTO songs (artist, decade, song_title, lyrics) VALUES (%s, %s, %s, %s)"
+                params = (artist_name, decade, title, lyrics)
+
+                # Execute the query with the parameter values
+                cur.execute(query, params)
+
+                # Commit the changes to the database
+                conn.commit()
+
+                # Close the cursor and the database connection
+                cur.close()
+
+
+            except:
+                pass
+
             if os.path.exists(os.path.relpath(folder + "/all/")):
                 save_file(path=folder + "/all/" + file_title, text=lyrics, replace=replace)
             else:
@@ -185,13 +204,14 @@ def scrape_artist(
         sleep="random",
         by_decade=True,
         replace=False,
-        folder="songs"
+        folder="songs",
+        artist_name = "N.A"
 ):
     home = "https://www.azlyrics.com/"
-    while True :
+    while True:
         proxy = random.choice(candidate_proxies)
         try:
-            print(f"trying proxy : {proxy}",end = " ")
+            print(f"trying proxy : {proxy}", end=" ")
             response = requests.get(az_url, proxies={'https': proxy}, timeout=20)
             if response.status_code == 200:
                 print("\n Initialization of song lyrics download")
@@ -209,19 +229,22 @@ def scrape_artist(
                         pass
 
                 i = 1
-                folder_path  = os.path.join(folder,"all")
+                folder_path = os.path.join(folder, "all")
                 if os.path.isdir(folder_path):
                     current_downloaded_files = os.listdir(folder_path)
-                    empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder,"all",f)).st_size == 0}
+                    empty_files = {f for f in current_downloaded_files if
+                                   os.stat(os.path.join(folder, "all", f)).st_size == 0}
                     downloaded_files = set(current_downloaded_files) - empty_files
-                    downloaded_files =[s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
-                    urls_to_download = [url for url in urls if not any(word in url for word in [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)])]
+                    downloaded_files = [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
+                    urls_to_download = [url for url in urls if not any(word in url for word in
+                                                                       [s.split('.')[0].replace('_', '').lower() for s
+                                                                        in list(downloaded_files)])]
                 else:
                     urls_to_download = urls
 
                 n = len(urls_to_download)
                 for url in urls_to_download:
-                    get_lyrics(url,proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
+                    get_lyrics(url,artist_name, proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
                     if sleep == "random":
                         rt = random.randint(5, 15)
                         t = 10
@@ -232,7 +255,7 @@ def scrape_artist(
                     i += 1
                     time.sleep(rt)  # This is to avoid being recognized as a bot
                 break
-            else :
+            else:
                 response = requests.get(az_url, proxies={'http': proxy}, timeout=20)
                 url = az_url
                 request = urllib.request.Request(url)
@@ -246,7 +269,8 @@ def scrape_artist(
 
                 i = 1
                 current_downloaded_files = os.listdir(os.path.join(folder, "all"))
-                empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder, "all", f)).st_size == 0}
+                empty_files = {f for f in current_downloaded_files if
+                               os.stat(os.path.join(folder, "all", f)).st_size == 0}
                 downloaded_files = set(current_downloaded_files) - empty_files
                 downloaded_files = [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
                 urls_to_download = [url for url in urls if not any(
@@ -326,20 +350,19 @@ def scrape_all(
 #                      'http://proxy3.example.com:1234']
 
 
-#candidate_proxies = proxies.get_list_working_proxies()
-#https://spys.one/en/free-proxy-list/
-#candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
-#candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
+# candidate_proxies = proxies.get_list_working_proxies()
+# https://spys.one/en/free-proxy-list/
+# candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
+# candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
 # Initiate Database Connection
-conn = psycopg2.connect(database="aclepmym", user = "aclepmym", password = "K588WhHB-Mvpn-i_LEFZ5IcbZ4ZeOba7", host = "balarama.db.elephantsql.com", port = "5432")
+conn = psycopg2.connect(database="aclepmym", user="aclepmym", password="K588WhHB-Mvpn-i_LEFZ5IcbZ4ZeOba7",
+                        host="balarama.db.elephantsql.com", port="5432")
 
 print("Opened database successfully")
 
 candidate_proxies = pps.get_list_of_proxies()
-vanilla_ice = "https://www.azlyrics.com/v/vanillaice.html"
-scrape_artist(vanilla_ice, folder=f"C:\Artists\\vanilla_ice")
+haddaway = "https://www.azlyrics.com/h/haddaway.html"
+scrape_artist(haddaway, folder=f"C:\Artists\\haddaway",artist_name="haddaway")
 conn.close()
-#only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
-#get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
-
-
+# only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
+# get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
