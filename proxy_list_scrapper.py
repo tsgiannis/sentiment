@@ -18,7 +18,7 @@ def get_list_of_proxies():
     # PROXYLIST_DOWNLOAD_SOCKS4 = 'https://www.proxy-list.download/SOCKS4'
     # PROXYLIST_DOWNLOAD_SOCKS5 = 'https://www.proxy-list.download/SOCKS5'
     ALL = 'ALL'
-    scrapper = Scrapper(category='ANANY', print_err_trace=False)
+    scrapper = Scrapper(category='ALL', print_err_trace=False)
 # Get ALL Proxies According to your Choice
     data = scrapper.getProxies()
 

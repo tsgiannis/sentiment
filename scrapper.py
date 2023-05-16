@@ -13,7 +13,7 @@ import urllib
 #import proxies
 import requests
 import proxy_list_scrapper as pps
-from varname import nameof
+import psycopg2
 
 
 # def get_proxies(number, port, p, country):
@@ -148,32 +148,33 @@ def get_lyrics(
     song = urllib.request.urlopen(request)
     soup = BeautifulSoup(song.read(), "html.parser")
     lyrics =soup.find_all(attrs={'class': None})[34].text
+    if len(lyrics)>100:
     # soup.find_all("div")[20].get_text()
-    title = soup.find_all("b")[1].get_text().replace('"', '')
-    file_title = title.replace(" ", "_")
-    album = soup.find_all(class_="songinalbum_title")
-    if len(album) == 1:
-        album_text = album[0].get_text()
-        if (album_text[album_text.find("(") + 1:album_text.find(")")]).isnumeric():
-            year = int(album_text[album_text.find("(") + 1:album_text.find(")")])
-            decade = str(year)[:3] + "0s"
-    else:
-        year = None
-        decade = "others"
-    if not save:
-        return title, lyrics, year
-    else:
-        if os.path.exists(os.path.relpath(folder + "/all/")):
-            save_file(path=folder + "/all/" + file_title, text=lyrics, replace=replace)
+        title = soup.find_all("b")[1].get_text().replace('"', '')
+        file_title = title.replace(" ", "_")
+        album = soup.find_all(class_="songinalbum_title")
+        if len(album) == 1:
+            album_text = album[0].get_text()
+            if (album_text[album_text.find("(") + 1:album_text.find(")")]).isnumeric():
+                year = int(album_text[album_text.find("(") + 1:album_text.find(")")])
+                decade = str(year)[:3] + "0s"
         else:
-            os.makedirs(os.path.relpath(folder + "/all/"))
-            save_file(path=folder + "/all/" + file_title, text=lyrics, replace=replace)
-        if by_decade:
-            if os.path.exists(os.path.relpath(folder + "/decades/" + decade)):
-                save_file(folder + "/decades/" + decade + "/" + file_title, text=lyrics, replace=replace)
+            year = None
+            decade = "others"
+        if not save:
+            return title, lyrics, year
+        else:
+            if os.path.exists(os.path.relpath(folder + "/all/")):
+                save_file(path=folder + "/all/" + file_title, text=lyrics, replace=replace)
             else:
-                os.makedirs(os.path.relpath(folder + "/decades/" + decade))
-                save_file(folder + "/decades/" + decade + "/" + file_title, text=lyrics, replace=replace)
+                os.makedirs(os.path.relpath(folder + "/all/"))
+                save_file(path=folder + "/all/" + file_title, text=lyrics, replace=replace)
+            if by_decade:
+                if os.path.exists(os.path.relpath(folder + "/decades/" + decade)):
+                    save_file(folder + "/decades/" + decade + "/" + file_title, text=lyrics, replace=replace)
+                else:
+                    os.makedirs(os.path.relpath(folder + "/decades/" + decade))
+                    save_file(folder + "/decades/" + decade + "/" + file_title, text=lyrics, replace=replace)
 
 
 def scrape_artist(
@@ -187,7 +188,7 @@ def scrape_artist(
     while True :
         proxy = random.choice(candidate_proxies)
         try:
-            print(f"trying proxy : {proxy}")
+            print(f"trying proxy : {proxy}",end = " ")
             response = requests.get(az_url, proxies={'https': proxy}, timeout=20)
             if response.status_code == 200:
                 url = az_url
@@ -198,14 +199,22 @@ def scrape_artist(
                 divs = bs.find_all('div', {"class": "listalbum-item"})
                 urls = list()
                 for d in divs:
-                    urls.append(home + d.a['href'].split("/", 1)[1])
+                    try:
+                        urls.append(home + d.a['href'].split("/", 1)[1])
+                    except:
+                        pass
 
                 i = 1
-                current_downloaded_files = os.listdir(os.path.join(folder,"all"))
-                empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder,"all",f)).st_size == 0}
-                downloaded_files = set(current_downloaded_files) - empty_files
-                downloaded_files =[s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
-                urls_to_download = [url for url in urls if not any(word in url for word in [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)])]
+                folder_path  = os.path.join(folder,"all")
+                if os.path.isdir(folder_path):
+                    current_downloaded_files = os.listdir(folder_path)
+                    empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder,"all",f)).st_size == 0}
+                    downloaded_files = set(current_downloaded_files) - empty_files
+                    downloaded_files =[s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
+                    urls_to_download = [url for url in urls if not any(word in url for word in [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)])]
+                else:
+                    urls_to_download = urls
+
                 n = len(urls_to_download)
                 for url in urls_to_download:
                     get_lyrics(url,proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
@@ -218,7 +227,40 @@ def scrape_artist(
                           " lyric : ", url)
                     i += 1
                     time.sleep(rt)  # This is to avoid being recognized as a bot
+                break
+            else :
+                response = requests.get(az_url, proxies={'http': proxy}, timeout=20)
+                url = az_url
+                request = urllib.request.Request(url)
+                request.set_proxy(proxy, 'http')
+                main_page = urllib.request.urlopen(request)
+                bs = BeautifulSoup(main_page.read(), "html.parser")
+                divs = bs.find_all('div', {"class": "listalbum-item"})
+                urls = list()
+                for d in divs:
+                    urls.append(home + d.a['href'].split("/", 1)[1])
+
+                i = 1
+                current_downloaded_files = os.listdir(os.path.join(folder, "all"))
+                empty_files = {f for f in current_downloaded_files if os.stat(os.path.join(folder, "all", f)).st_size == 0}
+                downloaded_files = set(current_downloaded_files) - empty_files
+                downloaded_files = [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)]
+                urls_to_download = [url for url in urls if not any(
+                    word in url for word in [s.split('.')[0].replace('_', '').lower() for s in list(downloaded_files)])]
+                n = len(urls_to_download)
+                for url in urls_to_download:
+                    get_lyrics(url, proxy, save=True, by_decade=by_decade, replace=replace, folder=folder)
+                    if sleep == "random":
+                        rt = random.randint(5, 15)
+                        t = 10
+                    else:
+                        rt = t = sleep
+                    print("Songs downloaded:", i, "/", n, " -  ETA:", round(t * (n - i) / 60, 2), "minutes",
+                          " lyric : ", url)
+                    i += 1
+                    time.sleep(rt)  # This is to avoid being recognized as a bot
             break
+
 
         except:
             print(f"fail on using proxy {proxy}")
@@ -284,11 +326,16 @@ def scrape_all(
 #https://spys.one/en/free-proxy-list/
 #candidate_proxies = ['206.189.234.208:8080','206.189.234.208:8080','34.75.202.63:80','135.181.255.160:8080','87.236.197.231:3128']
 #candidate_proxies = ['206.189.234.208:8080','87.236.197.231:3128','65.108.48.232:8080       ']
-candidate_proxies = pps.get_list_of_proxies()
-mc_hammer = "https://www.azlyrics.com/m/mchammer.html"
-scrape_artist(mc_hammer, folder=f"C:\Artists\mc_hammer")
+# Initiate Database Connection
+conn = psycopg2.connect(database="aclepmym", user = "aclepmym", password = "K588WhHB-Mvpn-i_LEFZ5IcbZ4ZeOba7", host = "balarama.db.elephantsql.com", port = "5432")
 
-only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
-get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
+print("Opened database successfully")
+
+candidate_proxies = pps.get_list_of_proxies()
+vanilla_ice = "https://www.azlyrics.com/v/vanillaice.html"
+scrape_artist(vanilla_ice, folder=f"C:\Artists\\vanilla_ice")
+conn.close()
+#only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
+#get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
 
 
