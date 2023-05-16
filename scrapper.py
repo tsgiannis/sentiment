@@ -158,6 +158,8 @@ def get_lyrics(
             if (album_text[album_text.find("(") + 1:album_text.find(")")]).isnumeric():
                 year = int(album_text[album_text.find("(") + 1:album_text.find(")")])
                 decade = str(year)[:3] + "0s"
+            else:
+                print(album_text)
         else:
 
             year = None
@@ -192,6 +194,7 @@ def scrape_artist(
             print(f"trying proxy : {proxy}",end = " ")
             response = requests.get(az_url, proxies={'https': proxy}, timeout=20)
             if response.status_code == 200:
+                print("\n Initialization of song lyrics download")
                 url = az_url
                 request = urllib.request.Request(url)
                 request.set_proxy(proxy, 'https')
