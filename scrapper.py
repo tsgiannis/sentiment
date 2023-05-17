@@ -131,15 +131,15 @@ def get_lyrics(
         replace=False,
         folder="songs"
 ):
-    while True:
-        time.sleep(15)
 
-        try:
-            response = requests.get(song_url, proxies={'https': current_proxy}, timeout=200)
-            if response.status_code == 200:
-                break
-        except:
-            pass
+    time.sleep(15)
+
+        # try:
+        #     response = requests.get(song_url, proxies={'https': current_proxy}, timeout=200)
+        #     if response.status_code == 200:
+        #         break
+        # except:
+        #     pass
     # song = urlopen(song_url)
     request = urllib.request.Request(song_url)
     request.set_proxy(current_proxy, 'https')
@@ -213,8 +213,9 @@ def scrape_artist(
         try:
             print(f"trying proxy : {proxy}", end=" ")
             response = requests.get(az_url, proxies={'https': proxy}, timeout=32)
-            time.sleep(15)
+
             if response.status_code == 200:
+                time.sleep(3)
                 print("\n Initialization of song lyrics download")
                 url = az_url
                 request = urllib.request.Request(url)
@@ -362,8 +363,14 @@ conn = psycopg2.connect(database="aclepmym", user="aclepmym", password="K588WhHB
 print("Opened database successfully")
 
 candidate_proxies = pps.get_list_of_proxies()
-artist_to_scrape = "https://www.azlyrics.com/d/doors.html"
-scrape_artist(artist_to_scrape, folder=f"C:\Artists\\doors",artist_name="doors")
+list_of_artists = ['https://www.azlyrics.com/w/whitesnake.html','https://www.azlyrics.com/d/depeche.html',
+                   'https://www.azlyrics.com/p/petshop.html','https://www.azlyrics.com/j/journey.html']
+for artist in list_of_artists:
+    artist_to_scrape = artist # "https://www.azlyrics.com/w/whitesnake.html"
+    artist_name = artist.split("/")[-1].split(".")[0]
+    save_path = os.path.join(r"C:\Artists",artist_name)
+    #scrape_artist(artist_to_scrape, folder=f"C:\Artists\\whitesnake",artist_name=artist_name)
+    scrape_artist(artist_to_scrape, folder=save_path, artist_name=artist_name)
 conn.close()
 # only_time = "https://www.azlyrics.com/lyrics/enya/onlytime.html"
 # get_lyrics(only_time, folder="/Volumes/Teras/Information Retrieval/Lyrics/Only Time")
